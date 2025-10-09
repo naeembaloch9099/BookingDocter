@@ -115,13 +115,12 @@ const AdminDashboard = ({ onLogout }) => {
     const counts = [];
     const bucketMap = new Map();
 
-    for (let i = 5; i >= 0; i -= 1) {
-      const cursor = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    // build buckets for the current calendar year (January - December)
+    const year = now.getFullYear();
+    for (let month = 0; month < 12; month += 1) {
+      const cursor = new Date(year, month, 1);
       const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
-      const label = cursor.toLocaleDateString(undefined, {
-        month: "short",
-        year: "2-digit",
-      });
+      const label = cursor.toLocaleDateString(undefined, { month: "long" });
       months.push(label);
       counts.push(0);
       bucketMap.set(key, months.length - 1);
