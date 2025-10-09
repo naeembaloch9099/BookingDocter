@@ -395,7 +395,7 @@ const DashboardHome = ({
             alignItems: "center",
           }}
         >
-          <SectionTitle>Appointments in the Current Year 11</SectionTitle>
+          <SectionTitle>Appointments in the Current Year</SectionTitle>
           <div style={{ display: "flex", gap: 8 }}>
             <button
               onClick={() => setChartType("line")}
