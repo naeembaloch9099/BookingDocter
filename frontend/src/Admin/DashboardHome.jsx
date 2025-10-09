@@ -9,7 +9,7 @@ import {
   FaSyncAlt,
   FaUserCheck,
 } from "react-icons/fa";
-import SimpleChart from "./SimpleChart";
+import Animated3DChart from "./Animated3DChart";
 
 const DashboardContainer = styled.div`
   max-width: 1200px;
@@ -386,8 +386,8 @@ const DashboardHome = ({
 
       <ChartSection>
         <SectionTitle>Appointments in the Last 6 Months</SectionTitle>
-        <SimpleChart
-          data={chart?.values || []}
+        <Animated3DChart
+          values={chart?.values || []}
           labels={chart?.labels || []}
           height={220}
           legend="Monthly total"
