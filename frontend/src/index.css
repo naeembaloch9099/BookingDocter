@@ -1,0 +1,184 @@
+/* Global base stylesheet - restored to sensible defaults */
+:root {
+  --text: #0f172a;
+  --muted: #6b7280;
+  --accent: #4f46e5;
+  --surface: #ffffff;
+  --app-bg: #fafbfd;
+
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background: var(--app-bg);
+  min-width: 320px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Links */
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* Buttons */
+button {
+  font-family: inherit;
+  border-radius: 8px;
+  border: none;
+  padding: 0.55rem 1rem;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+}
+
+/* Utility container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Admin layout defaults */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+}
+.admin-sidebar {
+  width: 280px;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: white;
+  /* fixed on larger viewports so it doesn't scroll with the page content */
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 1000;
+  overflow-y: auto;
+}
+.admin-main {
+  flex: 1;
+  padding: 1.5rem;
+  background: var(--app-bg);
+  /* make room for the fixed sidebar so content isn't hidden */
+  margin-left: 280px;
+  box-sizing: border-box;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* Responsive sidebar sizes */
+@media (max-width: 1024px) {
+  .admin-sidebar {
+    width: 240px;
+  }
+  .admin-main {
+    margin-left: 240px;
+  }
+}
+@media (max-width: 768px) {
+  /* Mobile: make admin sidebar act as a top header in normal flow */
+  .admin-layout {
+    flex-direction: column;
+  }
+  .admin-sidebar {
+    /* on mobile, the sidebar becomes a header in the flow */
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    z-index: 1000;
+  }
+  .admin-sidebar .logo-text {
+    display: none;
+  }
+  .admin-sidebar .logo-mobile {
+    margin-right: 12px;
+  }
+  .admin-sidebar .sidebar-menu {
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .admin-sidebar .menu-item {
+    margin: 0;
+  }
+  .admin-sidebar .menu-button {
+    padding: 0.5rem;
+    border-right: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .admin-main {
+    padding: 1rem;
+    padding-top: 0; /* header is in document flow so no extra padding needed */
+    margin-left: 0; /* remove left offset so content is full-width on mobile */
+    height: auto;
+    min-height: auto;
+    overflow: visible;
+  }
+
+  /* When mobile menu is opened, show a vertical overlay sidebar */
+  .admin-sidebar.mobile-open {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 260px;
+    height: 100vh;
+    display: block;
+    padding: 1rem;
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    z-index: 1100;
+  }
+
+  /* a simple backdrop when the mobile menu is open */
+  .admin-sidebar.mobile-open::after {
+    content: "";
+    position: fixed;
+    inset: 0 0 0 260px;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 1090;
+  }
+}
+@media (max-width: 480px) {
+  .admin-sidebar {
+    width: 64px;
+  }
+}
+
+/* Helpers */
+.hidden-mobile {
+  display: block;
+}
+@media (max-width: 480px) {
+  .hidden-mobile {
+    display: none;
+  }
+}
+
+/* Small typography helpers */
+h1 {
+  font-size: clamp(1.6rem, 4.2vw, 3.2rem);
+  line-height: 1.1;
+}
+
+/* End restored stylesheet */
