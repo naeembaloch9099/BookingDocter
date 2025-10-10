@@ -7,6 +7,13 @@ const messageSchema = new mongoose.Schema(
     email: { type: String },
     phone: { type: String },
     message: { type: String },
+    reply: { type: String },
+    status: {
+      type: String,
+      enum: ["sent", "delivered", "read"],
+      default: "sent",
+    },
+    conversationId: { type: String },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }

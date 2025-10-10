@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import styled from "styled-components";
 import { FaUser, FaEnvelope, FaPhone, FaComment } from "react-icons/fa";
+import { FaPaperPlane } from "react-icons/fa";
+import { initSocket } from "../utils/socket";
+import { useEffect } from "react";
+import { buildAuthHeaders, getApiBase } from "../utils/api";
 
 const MessagesContainer = styled.div`
   max-width: 1000px;
@@ -130,48 +134,247 @@ const MessageText = styled.p`
 `;
 
 const Messages = ({ messages = [] }) => {
+  const user =
+    typeof window !== "undefined" ? window.__APP_USER__ || null : null;
+  const isAdmin = user && user.role === "admin";
+  const [replyText, setReplyText] = useState({});
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all"); // all | replied | unreplied
+
+  const handleReply = async (messageId) => {
+    const text = (replyText[messageId] || "").trim();
+    if (!text) return;
+    // try REST first to ensure persistence and server-side emit
+    try {
+      const base = getApiBase();
+      const url = `${base.replace(/\/$/, "")}/api/messages/${messageId}/reply`;
+      const headers = {
+        "Content-Type": "application/json",
+        ...buildAuthHeaders(),
+      };
+      const res = await fetch(url, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ reply: text }),
+      });
+      if (!res.ok) throw new Error(`Reply failed: ${res.status}`);
+      // persisted; clear input
+      setReplyText((s) => ({ ...s, [messageId]: "" }));
+      return;
+    } catch (err) {
+      console.warn("REST reply failed, falling back to socket", err);
+    }
+
+    // fallback to socket emit (older behavior)
+    try {
+      const sock = initSocket();
+      sock.emit("reply_message", { messageId, replyText: text });
+      setReplyText((s) => ({ ...s, [messageId]: "" }));
+    } catch (e) {
+      console.error("Failed to send reply via socket", e);
+    }
+  };
+
+  // typing state per email
+  const [typingMap, setTypingMap] = React.useState({});
+
+  useEffect(() => {
+    const sock = initSocket();
+    const onTyping = ({ email, typing }) => {
+      setTypingMap((s) => ({ ...s, [email]: typing }));
+      // clear after a short timeout if typing stops
+      if (!typing) {
+        setTimeout(() => {
+          setTypingMap((s) => ({ ...s, [email]: false }));
+        }, 3000);
+      }
+    };
+    const onStatus = () => {
+      // noop here: AdminDashboard already updates messages state; keep for safety
+    };
+    sock.on("typing", onTyping);
+    sock.on("message_status", onStatus);
+    return () => {
+      try {
+        sock.off("typing", onTyping);
+        sock.off("message_status", onStatus);
+      } catch (err) {
+        console.warn(err);
+      }
+    };
+  }, []);
+
+  // derive grouped messages by email (or createdBy if available)
+  const grouped = useMemo(() => {
+    // apply search and filter first
+    const q = (search || "").trim().toLowerCase();
+    const filtered = (messages || []).filter((m) => {
+      if (!m) return false;
+      // filter by replied/unreplied
+      if (filter === "replied" && !m.reply) return false;
+      if (filter === "unreplied" && m.reply) return false;
+      if (!q) return true;
+      const hay = `${m.firstName || ""} ${m.lastName || ""} ${m.email || ""} ${
+        m.message || ""
+      }`.toLowerCase();
+      return hay.includes(q);
+    });
+
+    const map = {};
+    for (const m of filtered) {
+      const key = m.email || m.createdBy || m._id;
+      if (!map[key]) {
+        map[key] = {
+          key,
+          email: m.email,
+          phone: m.phone,
+          name: `${m.firstName || ""} ${m.lastName || ""}`.trim(),
+          items: [],
+        };
+      }
+      map[key].items.push(m);
+    }
+
+    // convert to array and sort by most recent message in group
+    return Object.values(map).sort((a, b) => {
+      const ta = new Date(a.items[0]?.createdAt || 0).getTime();
+      const tb = new Date(b.items[0]?.createdAt || 0).getTime();
+      return tb - ta;
+    });
+  }, [messages, search, filter]);
+
   return (
     <MessagesContainer>
       <Header>
         <Title>MESSAGE</Title>
       </Header>
 
+      <div
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by name, email or message"
+          style={{
+            padding: 10,
+            borderRadius: 8,
+            border: "1px solid #e5e7eb",
+            flex: 1,
+          }}
+        />
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          style={{ padding: 10, borderRadius: 8 }}
+        >
+          <option value="all">All</option>
+          <option value="unreplied">Unreplied</option>
+          <option value="replied">Replied</option>
+        </select>
+      </div>
+
       <MessagesGrid>
-        {messages.length === 0 ? (
+        {grouped.length === 0 ? (
           <div style={{ padding: 20 }}>No messages yet.</div>
         ) : (
-          messages.map((message) => (
-            <MessageCard key={message._id || message.email}>
+          grouped.map((group) => (
+            <MessageCard key={group.key}>
               <MessageHeader>
                 <MessageIcon>
                   <FaUser />
                 </MessageIcon>
                 <MessageSender>
                   <SenderName>
-                    {message.firstName} {message.lastName}
+                    {group.name || group.email}{" "}
+                    {typingMap[group.email] ? (
+                      <span
+                        style={{
+                          fontSize: 12,
+                          color: "#6b7280",
+                          marginLeft: 8,
+                        }}
+                      >
+                        typing...
+                      </span>
+                    ) : null}
                   </SenderName>
                   <SenderDetails>
-                    <DetailItem>
-                      <DetailIcon>
-                        <FaEnvelope />
-                      </DetailIcon>
-                      {message.email}
-                    </DetailItem>
-                    <DetailItem>
-                      <DetailIcon>
-                        <FaPhone />
-                      </DetailIcon>
-                      {message.phone}
-                    </DetailItem>
+                    {group.email ? (
+                      <DetailItem>
+                        <DetailIcon>
+                          <FaEnvelope />
+                        </DetailIcon>
+                        {group.email}
+                      </DetailItem>
+                    ) : null}
+                    {group.phone ? (
+                      <DetailItem>
+                        <DetailIcon>
+                          <FaPhone />
+                        </DetailIcon>
+                        {group.phone}
+                      </DetailItem>
+                    ) : null}
                   </SenderDetails>
                 </MessageSender>
               </MessageHeader>
 
               <MessageContent>
-                <div>
-                  <MessageLabel>Message:</MessageLabel>
-                </div>
-                <MessageText>{message.message}</MessageText>
+                {group.items.map((message) => (
+                  <div key={message._id} style={{ marginBottom: 12 }}>
+                    <div>
+                      <MessageLabel>Message:</MessageLabel>
+                    </div>
+                    <MessageText>{message.message}</MessageText>
+                    {message.reply ? (
+                      <div style={{ marginTop: 8 }}>
+                        <MessageLabel>Reply:</MessageLabel>
+                        <MessageText>{message.reply}</MessageText>
+                      </div>
+                    ) : null}
+
+                    {isAdmin ? (
+                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                        <input
+                          value={replyText[message._id] || ""}
+                          onChange={(e) =>
+                            setReplyText((s) => ({
+                              ...s,
+                              [message._id]: e.target.value,
+                            }))
+                          }
+                          placeholder="Write a reply..."
+                          style={{
+                            flex: 1,
+                            padding: "8px 10px",
+                            borderRadius: 8,
+                            border: "1px solid #e5e7eb",
+                          }}
+                        />
+                        <button
+                          onClick={() => handleReply(message._id)}
+                          aria-label="Send reply"
+                          style={{
+                            background: "#4f46e5",
+                            color: "white",
+                            border: "none",
+                            padding: "8px 10px",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <FaPaperPlane />
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
               </MessageContent>
             </MessageCard>
           ))

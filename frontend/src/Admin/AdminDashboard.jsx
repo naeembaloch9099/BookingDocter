@@ -10,6 +10,7 @@ import AddDoctor from "./AddDoctor";
 import Messages from "./Messages";
 import AppointmentsTable from "./AppointmentsTable";
 import { jsonFetch } from "../utils/api";
+import { initSocket } from "../utils/socket";
 
 const DashboardContainer = styled.div`
   display: flex;
@@ -83,6 +84,53 @@ const AdminDashboard = ({ onLogout }) => {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  // socket: listen for new messages and replies
+  useEffect(() => {
+    const sock = initSocket();
+    const onNew = (msg) => {
+      console.log("[SOCKET] new_message", msg);
+      setMessages((prev) => [msg, ...prev]);
+    };
+    const onReply = (msg) => {
+      console.log("[SOCKET] message_replied", msg);
+      setMessages((prev) => prev.map((m) => (m._id === msg._id ? msg : m)));
+    };
+    const onStatus = (msg) => {
+      console.log("[SOCKET] message_status", msg);
+      setMessages((prev) => prev.map((m) => (m._id === msg._id ? msg : m)));
+    };
+
+    const onTyping = ({ email, typing }) => {
+      // quick console; Messages component will also listen if needed
+      console.log(`[SOCKET] typing ${email} => ${typing}`);
+    };
+
+    sock.on("new_message", onNew);
+    sock.on("message_replied", onReply);
+    sock.on("message_status", onStatus);
+    sock.on("typing", onTyping);
+
+    // if current user is admin, ask server to add socket to admins room
+    try {
+      const user =
+        typeof window !== "undefined" ? window.__APP_USER__ || null : null;
+      if (user && user.role === "admin") {
+        sock.emit("join_admins");
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+
+    return () => {
+      try {
+        sock.off("new_message", onNew);
+        sock.off("message_replied", onReply);
+      } catch {
+        // intentionally left blank: cleanup only
+      }
+    };
+  }, []);
 
   useEffect(() => {
     console.log("[ADMIN DASHBOARD] State updated", {

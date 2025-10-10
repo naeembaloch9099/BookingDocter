@@ -65,6 +65,8 @@ export const getAuthToken = () => {
   return (
     window.__APP_TOKEN__ ||
     window.localStorage?.getItem("app_token") ||
+    window.localStorage?.getItem("token") ||
+    window.localStorage?.getItem("jwt") ||
     undefined
   );
 };

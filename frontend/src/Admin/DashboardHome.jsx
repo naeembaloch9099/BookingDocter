@@ -460,7 +460,6 @@ const DashboardHome = ({
               <TableHead>Doctor</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Visit Type</TableHead>
             </TableRow>
           </TableHeader>
           <tbody>
@@ -479,9 +478,6 @@ const DashboardHome = ({
             ) : (
               recentAppointments.map((appointment) => {
                 const status = appointment.status || "Pending";
-                const visitText = appointment.visitedBefore
-                  ? "Returning"
-                  : "First time";
                 return (
                   <TableRow key={appointment._id}>
                     <TableCell>
@@ -498,7 +494,6 @@ const DashboardHome = ({
                     <TableCell>
                       <StatusBadge $status={status}>{status}</StatusBadge>
                     </TableCell>
-                    <TableCell>{visitText}</TableCell>
                   </TableRow>
                 );
               })
