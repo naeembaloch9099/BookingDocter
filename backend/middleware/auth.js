@@ -1,8 +1,9 @@
+/* eslint-env node, commonjs */
 const jwt = require("jsonwebtoken");
 
-exports.authenticate = (req, res, next) => {
+function authenticate(req, res, next) {
   try {
-    const authHeader = req.headers.authorization || req.cookies.token;
+    const authHeader = req.headers.authorization || req.cookies?.token;
     if (!authHeader) {
       console.warn(
         "[AUTH] No token provided - headers:",
@@ -12,9 +13,11 @@ exports.authenticate = (req, res, next) => {
     }
 
     let token = authHeader;
-    if (authHeader.startsWith("Bearer ")) token = authHeader.split(" ")[1];
+    if (typeof authHeader === "string" && authHeader.startsWith("Bearer "))
+      token = authHeader.split(" ")[1];
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "devsecret");
+    const jwtSecret = process?.env?.JWT_SECRET || "devsecret";
+    const decoded = jwt.verify(token, jwtSecret);
     req.userId = decoded.id;
     req.userRole = decoded.role;
     // also expose email so controllers can make email-based authorization decisions
@@ -24,4 +27,6 @@ exports.authenticate = (req, res, next) => {
     console.error("[AUTH] Token verification failed", err && err.message);
     res.status(401).json({ message: "Invalid token" });
   }
-};
+}
+
+module.exports = { authenticate };

@@ -1,11 +1,12 @@
+/* eslint-env node, commonjs */
 const Message = require("../models/Message");
 
 let io = null;
-exports.setIo = (serverIo) => {
+function setIo(serverIo) {
   io = serverIo;
-};
+}
 
-exports.createMessage = async (req, res) => {
+async function createMessage(req, res) {
   try {
     console.log("[CREATE MESSAGE] Payload received:", req.body);
     console.log(
@@ -58,9 +59,9 @@ exports.createMessage = async (req, res) => {
     console.error("[CREATE MESSAGE ERROR]", err);
     res.status(500).json({ message: "Server error" });
   }
-};
+}
 
-exports.getMessages = async (req, res) => {
+async function getMessages(req, res) {
   try {
     console.log("[GET MESSAGES] Request received");
     const q = {};
@@ -77,9 +78,9 @@ exports.getMessages = async (req, res) => {
     console.error("[GET MESSAGES ERROR]", err);
     res.status(500).json({ message: "Server error" });
   }
-};
+}
 
-exports.deleteMessage = async (req, res) => {
+async function deleteMessage(req, res) {
   try {
     const id = req.params.id;
     if (!id) return res.status(400).json({ message: "Invalid id" });
@@ -102,10 +103,10 @@ exports.deleteMessage = async (req, res) => {
     console.error("[DELETE MESSAGE ERROR]", err);
     res.status(500).json({ message: "Server error" });
   }
-};
+}
 
 // admin reply via REST (useful when socket auth isn't available on client)
-exports.replyToMessage = async (req, res) => {
+async function replyToMessage(req, res) {
   try {
     const id = req.params.id;
     const { reply } = req.body || {};
@@ -120,8 +121,9 @@ exports.replyToMessage = async (req, res) => {
         "[REPLY] Auth header (server):",
         req.headers.authorization ? "present" : "missing"
       );
-    } catch (e) {
-      /* ignore */
+    } catch (err) {
+      // log minor error while checking headers to help debug auth issues
+      console.debug("[REPLY] header check error", err && err.message);
     }
 
     if (req.userRole !== "admin") {
@@ -143,8 +145,8 @@ exports.replyToMessage = async (req, res) => {
       if (io) {
         io.emit("message_replied", msg);
       }
-    } catch (e) {
-      console.error("[REPLY MESSAGE] Socket emit failed", e);
+    } catch (err) {
+      console.error("[REPLY MESSAGE] Socket emit failed", err);
     }
 
     res.json({ ok: true, message: msg });
@@ -152,4 +154,12 @@ exports.replyToMessage = async (req, res) => {
     console.error("[REPLY MESSAGE ERROR]", err);
     res.status(500).json({ message: "Server error" });
   }
+}
+
+module.exports = {
+  setIo,
+  createMessage,
+  getMessages,
+  deleteMessage,
+  replyToMessage,
 };
