@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import styled from "styled-components";
 import {
   FaCalendarCheck,
@@ -9,7 +9,6 @@ import {
   FaSyncAlt,
   FaUserCheck,
 } from "react-icons/fa";
-import Animated3DChart from "./Animated3DChart";
 import SimpleChart from "./SimpleChart";
 
 const DashboardContainer = styled.div`
@@ -346,8 +345,6 @@ const DashboardHome = ({
     },
   ];
 
-  const [chartType, setChartType] = useState("line"); // 'line' or '3d'
-
   return (
     <DashboardContainer>
       <WelcomeSection>
@@ -388,65 +385,13 @@ const DashboardHome = ({
       </StatsGrid>
 
       <ChartSection>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <SectionTitle>Appointments in the Current Year</SectionTitle>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={() => setChartType("line")}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 8,
-                border:
-                  chartType === "line"
-                    ? "2px solid #4f46e5"
-                    : "1px solid #e6edf7",
-                background: chartType === "line" ? "#f3f0ff" : "white",
-                cursor: "pointer",
-                fontWeight: 700,
-              }}
-            >
-              Line
-            </button>
-            <button
-              onClick={() => setChartType("3d")}
-              style={{
-                padding: "6px 10px",
-                borderRadius: 8,
-                border:
-                  chartType === "3d"
-                    ? "2px solid #4f46e5"
-                    : "1px solid #e6edf7",
-                background: chartType === "3d" ? "#f3f0ff" : "white",
-                cursor: "pointer",
-                fontWeight: 700,
-              }}
-            >
-              3D
-            </button>
-          </div>
-        </div>
-
-        {chartType === "line" ? (
-          <SimpleChart
-            data={chart?.values || []}
-            labels={chart?.labels || []}
-            height={220}
-            legend="Monthly total"
-          />
-        ) : (
-          <Animated3DChart
-            values={chart?.values || []}
-            labels={chart?.labels || []}
-            height={220}
-            legend="Monthly total"
-          />
-        )}
+        <SectionTitle>Appointments in the Last 6 Months</SectionTitle>
+        <SimpleChart
+          data={chart?.values || []}
+          labels={chart?.labels || []}
+          height={220}
+          legend="Monthly total"
+        />
       </ChartSection>
 
       <AppointmentsSection>
@@ -460,6 +405,7 @@ const DashboardHome = ({
               <TableHead>Doctor</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Visit Type</TableHead>
             </TableRow>
           </TableHeader>
           <tbody>
@@ -478,6 +424,9 @@ const DashboardHome = ({
             ) : (
               recentAppointments.map((appointment) => {
                 const status = appointment.status || "Pending";
+                const visitText = appointment.visitedBefore
+                  ? "Returning"
+                  : "First time";
                 return (
                   <TableRow key={appointment._id}>
                     <TableCell>
@@ -494,6 +443,7 @@ const DashboardHome = ({
                     <TableCell>
                       <StatusBadge $status={status}>{status}</StatusBadge>
                     </TableCell>
+                    <TableCell>{visitText}</TableCell>
                   </TableRow>
                 );
               })

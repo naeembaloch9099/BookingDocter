@@ -10,7 +10,6 @@ import AddDoctor from "./AddDoctor";
 import Messages from "./Messages";
 import AppointmentsTable from "./AppointmentsTable";
 import { jsonFetch } from "../utils/api";
-import { initSocket } from "../utils/socket";
 
 const DashboardContainer = styled.div`
   display: flex;
@@ -72,6 +71,27 @@ const AdminDashboard = ({ onLogout }) => {
     }
   }, []);
 
+  const handleReply = async (messageId, replyText) => {
+    try {
+      console.log("[ADMIN] Replying to message", messageId);
+      const res = await jsonFetch(`/api/messages/${messageId}/reply`, {
+        method: "PATCH",
+        body: { reply: replyText },
+      });
+      const updated = res?.message;
+      if (updated) {
+        setMessages((prev) => prev.map((m) => (m._id === updated._id ? updated : m)));
+      }
+    } catch (err) {
+      console.error("[ADMIN] Reply failed", err);
+      if (window.__APP_TOAST__ && typeof window.__APP_TOAST__.error === "function") {
+        window.__APP_TOAST__.error(err?.message || "Failed to send reply");
+      } else {
+        alert(err?.message || "Failed to send reply");
+      }
+    }
+  };
+
   const handleStatusUpdate = useCallback((appointmentId, status) => {
     setAppointments((prev) =>
       prev.map((appt) =>
@@ -84,53 +104,6 @@ const AdminDashboard = ({ onLogout }) => {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
-
-  // socket: listen for new messages and replies
-  useEffect(() => {
-    const sock = initSocket();
-    const onNew = (msg) => {
-      console.log("[SOCKET] new_message", msg);
-      setMessages((prev) => [msg, ...prev]);
-    };
-    const onReply = (msg) => {
-      console.log("[SOCKET] message_replied", msg);
-      setMessages((prev) => prev.map((m) => (m._id === msg._id ? msg : m)));
-    };
-    const onStatus = (msg) => {
-      console.log("[SOCKET] message_status", msg);
-      setMessages((prev) => prev.map((m) => (m._id === msg._id ? msg : m)));
-    };
-
-    const onTyping = ({ email, typing }) => {
-      // quick console; Messages component will also listen if needed
-      console.log(`[SOCKET] typing ${email} => ${typing}`);
-    };
-
-    sock.on("new_message", onNew);
-    sock.on("message_replied", onReply);
-    sock.on("message_status", onStatus);
-    sock.on("typing", onTyping);
-
-    // if current user is admin, ask server to add socket to admins room
-    try {
-      const user =
-        typeof window !== "undefined" ? window.__APP_USER__ || null : null;
-      if (user && user.role === "admin") {
-        sock.emit("join_admins");
-      }
-    } catch (e) {
-      console.warn(e);
-    }
-
-    return () => {
-      try {
-        sock.off("new_message", onNew);
-        sock.off("message_replied", onReply);
-      } catch {
-        // intentionally left blank: cleanup only
-      }
-    };
-  }, []);
 
   useEffect(() => {
     console.log("[ADMIN DASHBOARD] State updated", {
@@ -163,12 +136,13 @@ const AdminDashboard = ({ onLogout }) => {
     const counts = [];
     const bucketMap = new Map();
 
-    // build buckets for the current calendar year (January - December)
-    const year = now.getFullYear();
-    for (let month = 0; month < 12; month += 1) {
-      const cursor = new Date(year, month, 1);
+    for (let i = 5; i >= 0; i -= 1) {
+      const cursor = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
-      const label = cursor.toLocaleDateString(undefined, { month: "long" });
+      const label = cursor.toLocaleDateString(undefined, {
+        month: "short",
+        year: "2-digit",
+      });
       months.push(label);
       counts.push(0);
       bucketMap.set(key, months.length - 1);
@@ -242,7 +216,7 @@ const AdminDashboard = ({ onLogout }) => {
           />
         );
       case "messages":
-        return <Messages messages={messages} />;
+        return <Messages messages={messages} onReply={handleReply} />;
       default:
         return (
           <DashboardHome

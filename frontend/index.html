@@ -1,30 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React</title>
-    <!-- Optional runtime API base: set this meta in your deployed index.html to override build-time vars -->
-    <meta name="api-base" content="" />
   </head>
   <body>
     <div id="root"></div>
-    <script>
-      // If index.html contains a meta[name="api-base"] with a value, expose it to the app at runtime
-      try {
-        const meta = document.querySelector('meta[name="api-base"]');
-        if (meta && meta.content && meta.content.trim()) {
-          window.__API_BASE__ = meta.content.trim();
-          console.log(
-            "[RUNTIME] window.__API_BASE__ set from meta:",
-            window.__API_BASE__
-          );
-        }
-      } catch (e) {
-        /* ignore */
-      }
-    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

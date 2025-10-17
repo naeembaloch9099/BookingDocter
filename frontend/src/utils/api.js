@@ -8,56 +8,7 @@ export const getApiBase = () => {
     typeof import.meta !== "undefined"
       ? import.meta.env?.VITE_API_BASE_URL
       : undefined;
-  const base = windowBase || envBase || fallbackBase;
-
-  if (isBrowser) {
-    // Helpful runtime diagnostics for deployed apps (Vercel)
-    try {
-      console.log("[API] Resolved API base:", base);
-
-      if (
-        base.startsWith("http://localhost") ||
-        base.startsWith("http://127.0.0.1")
-      ) {
-        console.warn(
-          "[API] Warning: API base is localhost. This will not work from the deployed site. Set VITE_API_BASE_URL in your host (Vercel) to the public backend URL and redeploy."
-        );
-      }
-
-      if (
-        window.location &&
-        window.location.protocol === "https:" &&
-        base.startsWith("http:")
-      ) {
-        console.error(
-          "[API] Mixed content: page is served over HTTPS but API base is HTTP. Browsers will block these requests. Use an HTTPS API endpoint."
-        );
-      }
-    } catch {
-      /* ignore diagnostics errors */
-    }
-  }
-
-  // Fail fast in production if the base resolves to localhost to avoid shipping bad builds
-  try {
-    const mode =
-      typeof import.meta !== "undefined" ? import.meta.env?.MODE : undefined;
-    const isProd = mode === "production";
-    if (
-      isProd &&
-      (base.startsWith("http://localhost") ||
-        base.startsWith("http://127.0.0.1"))
-    ) {
-      // Throw an explicit error so it gets caught during runtime and is visible in logs
-      throw new Error(
-        "Invalid API base in production: resolved to localhost. Set VITE_API_BASE_URL in your host (Vercel) or use the runtime meta tag to point to a public backend."
-      );
-    }
-  } catch (err) {
-    if (isBrowser) console.error("[API] Guard error:", err?.message || err);
-  }
-
-  return base;
+  return windowBase || envBase || fallbackBase;
 };
 
 export const getAuthToken = () => {
@@ -65,8 +16,6 @@ export const getAuthToken = () => {
   return (
     window.__APP_TOKEN__ ||
     window.localStorage?.getItem("app_token") ||
-    window.localStorage?.getItem("token") ||
-    window.localStorage?.getItem("jwt") ||
     undefined
   );
 };
@@ -118,16 +67,7 @@ export const jsonFetch = async (path, options = {}) => {
   }
 
   console.log(`[API] ${method} ${url}`, logBody);
-  let response;
-  try {
-    response = await fetch(url, fetchConfig);
-  } catch (err) {
-    console.error(`[API] Network error fetching ${url}`, err);
-    // Provide a clearer error to the caller so it's easier to debug in deployed apps
-    const e = new Error(`Network error fetching ${url}: ${err.message}`);
-    e.original = err;
-    throw e;
-  }
+  const response = await fetch(url, fetchConfig);
   const text = await response.text();
   let payload = null;
 

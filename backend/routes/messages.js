@@ -5,7 +5,8 @@ const { authenticate } = require("../middleware/auth.js");
 const router = express.Router();
 
 router.get("/", authenticate, messageController.getMessages);
-router.post("/", authenticate, messageController.createMessage);
+// allow public message creation (contact form) without requiring auth
+router.post("/", messageController.createMessage);
 router.delete("/:id", authenticate, messageController.deleteMessage);
 router.patch("/:id/reply", authenticate, messageController.replyToMessage);
 

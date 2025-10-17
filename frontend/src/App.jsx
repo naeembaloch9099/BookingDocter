@@ -227,7 +227,6 @@ const App = () => {
         return (
           <LoginPage
             onNavigateToHome={navigateToHome}
-            onSwitchToSignup={navigateToSignup}
             showSuccess={showSuccess}
             showError={showError}
             showInfo={showInfo}

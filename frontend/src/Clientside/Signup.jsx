@@ -10,7 +10,7 @@ import {
   FaArrowLeft,
   FaSignOutAlt,
 } from "react-icons/fa";
-import { jsonFetch, getApiBase } from "../utils/api";
+import { jsonFetch } from "../utils/api";
 
 import { NAV_HEIGHT } from "./NavBar";
 const PageContainer = styled.div`
@@ -536,7 +536,6 @@ const SignupPage = ({
         dateOfBirth: normalizeDob(formData.dateOfBirth),
       };
 
-      console.log("[SIGNUP] API base:", getApiBase(), "payload:", payload);
       const response = await jsonFetch("/api/auth/signup", {
         method: "POST",
         body: payload,
@@ -576,10 +575,6 @@ const SignupPage = ({
 
     try {
       const normalizedEmail = formData.email.trim().toLowerCase();
-      console.log("[VERIFY OTP] API base:", getApiBase(), "body:", {
-        email: normalizedEmail,
-        otp: otpInput.trim(),
-      });
       const response = await jsonFetch("/api/auth/verify-otp", {
         method: "POST",
         body: {
@@ -622,12 +617,6 @@ const SignupPage = ({
 
     setResending(true);
     try {
-      console.log(
-        "[RESEND OTP] API base:",
-        getApiBase(),
-        "email:",
-        formData.email.trim().toLowerCase()
-      );
       await jsonFetch("/api/auth/resend-otp", {
         method: "POST",
         body: { email: formData.email.trim().toLowerCase() },

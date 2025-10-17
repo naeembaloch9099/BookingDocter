@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React from "react";
 import styled from "styled-components";
 
 const ChartWrap = styled.div`
@@ -10,27 +10,12 @@ const ChartWrap = styled.div`
   align-items: center;
   justify-content: center;
   min-height: 160px;
-  position: relative; /* required for tooltip positioning */
 `;
 
 const Legend = styled.div`
   font-size: 0.85rem;
   color: #6b7280;
   margin-bottom: 8px;
-`;
-
-const Tooltip = styled.div`
-  position: absolute;
-  pointer-events: none;
-  background: rgba(15, 23, 42, 0.95);
-  color: #fff;
-  padding: 6px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  transform: translate(-50%, -120%);
-  white-space: nowrap;
-  z-index: 40;
-  transition: opacity 120ms ease, transform 120ms ease;
 `;
 
 const EmptyState = styled.div`
@@ -48,20 +33,6 @@ const SimpleChart = ({
   gridLines = 4,
   legend = "Overview",
 }) => {
-  const svgRef = useRef(null);
-  const [hoverIndex, setHoverIndex] = useState(null);
-  const [tooltipPos, setTooltipPos] = useState({
-    left: 0,
-    top: 0,
-    visible: false,
-  });
-
-  useEffect(() => {
-    // reset hover if data changes
-    setHoverIndex(null);
-    setTooltipPos({ left: 0, top: 0, visible: false });
-  }, [data]);
-
   if (!data || data.length === 0) {
     return (
       <ChartWrap>
@@ -86,12 +57,12 @@ const SimpleChart = ({
     return { x, y, v };
   });
 
-  // Build path d (straight segments)
+  // Build path d
   const pathD = points
     .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`)
     .join(" ");
 
-  // Area path for fill under the line (very subtle)
+  // Area path for fill under the line
   const areaD = `${pathD} L ${padding.left + innerWidth} ${
     padding.top + innerHeight
   } L ${padding.left} ${padding.top + innerHeight} Z`;
@@ -108,7 +79,6 @@ const SimpleChart = ({
       <div style={{ width: "100%" }}>
         <Legend>{legend}</Legend>
         <svg
-          ref={svgRef}
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
           width="100%"
           height={svgHeight}
@@ -116,12 +86,12 @@ const SimpleChart = ({
         >
           <defs>
             <linearGradient id="areaGrad" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#7e22ce" stopOpacity="0.06" />
+              <stop offset="0%" stopColor="#7e22ce" stopOpacity="0.18" />
               <stop offset="100%" stopColor="#7e22ce" stopOpacity="0" />
             </linearGradient>
             <linearGradient id="lineGrad" x1="0" x2="1">
-              <stop offset="0%" stopColor="#111827" />
-              <stop offset="100%" stopColor="#4f46e5" />
+              <stop offset="0%" stopColor="#4f46e5" />
+              <stop offset="100%" stopColor="#7e22ce" />
             </linearGradient>
           </defs>
 
@@ -133,14 +103,14 @@ const SimpleChart = ({
                 x2={padding.left + innerWidth}
                 y1={tick.y}
                 y2={tick.y}
-                stroke="#f1f5f9"
+                stroke="#eef2ff"
                 strokeWidth={1}
               />
               <text
-                x={padding.left - 12}
+                x={padding.left - 10}
                 y={tick.y + 4}
-                fontSize="12"
-                fill="#475569"
+                fontSize="11"
+                fill="#6b7280"
                 textAnchor="end"
               >
                 {tick.value}
@@ -149,58 +119,25 @@ const SimpleChart = ({
           ))}
 
           {/* area under line */}
-          {/* subtle area under the line */}
           <path d={areaD} fill="url(#areaGrad)" />
 
           {/* line */}
-          {/* main line: darker and clearer */}
           <path
             d={pathD}
             fill="none"
             stroke="url(#lineGrad)"
-            strokeWidth={3.5}
+            strokeWidth={3}
             strokeLinecap="round"
             strokeLinejoin="round"
-            style={{
-              strokeLinejoin: "round",
-              vectorEffect: "non-scaling-stroke",
-            }}
           />
 
           {/* points */}
           {points.map((p, i) => (
-            <g
-              key={i}
-              onMouseEnter={() => {
-                setHoverIndex(i);
-                if (svgRef.current) {
-                  const rect = svgRef.current.getBoundingClientRect();
-                  setTooltipPos({
-                    left: rect.left + p.x,
-                    top: rect.top + p.y,
-                    visible: true,
-                  });
-                }
-              }}
-              onMouseLeave={() => {
-                setHoverIndex(null);
-                setTooltipPos({ ...tooltipPos, visible: false });
-              }}
-            >
-              {/* outer white ring */}
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r={hoverIndex === i ? 8 : 6}
-                fill="#fff"
-              />
-              {/* inner dot */}
-              <circle
-                cx={p.x}
-                cy={p.y}
-                r={hoverIndex === i ? 6 : 4}
-                fill={hoverIndex === i ? "#111827" : "#4f46e5"}
-              />
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r={6} fill="#fff" />
+              <circle cx={p.x} cy={p.y} r={4} fill="#4f46e5" />
+              {/* simple tooltip using title element */}
+              <title>{labels[i] ? `${labels[i]}: ${p.v}` : `${p.v}`}</title>
             </g>
           ))}
 
@@ -211,8 +148,8 @@ const SimpleChart = ({
                   key={i}
                   x={points[i].x}
                   y={padding.top + innerHeight + 18}
-                  fontSize="12"
-                  fill="#334155"
+                  fontSize="11"
+                  fill="#6b7280"
                   textAnchor="middle"
                 >
                   {lab}
@@ -223,8 +160,8 @@ const SimpleChart = ({
                   key={i}
                   x={points[i].x}
                   y={padding.top + innerHeight + 18}
-                  fontSize="12"
-                  fill="#334155"
+                  fontSize="11"
+                  fill="#6b7280"
                   textAnchor="middle"
                 >
                   {i + 1}
@@ -249,19 +186,6 @@ const SimpleChart = ({
             strokeWidth={1}
           />
         </svg>
-        {tooltipPos.visible && hoverIndex !== null && (
-          <Tooltip
-            style={{
-              left: tooltipPos.left,
-              top: tooltipPos.top,
-              opacity: tooltipPos.visible ? 1 : 0,
-            }}
-          >
-            {labels[hoverIndex]
-              ? `${labels[hoverIndex]}: ${data[hoverIndex]}`
-              : `${data[hoverIndex]}`}
-          </Tooltip>
-        )}
       </div>
     </ChartWrap>
   );

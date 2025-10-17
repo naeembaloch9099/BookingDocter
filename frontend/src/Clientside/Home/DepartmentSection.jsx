@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import styled from "styled-components";
 import { FaBaby, FaBone, FaHeart, FaBrain, FaStar } from "react-icons/fa";
-import { jsonFetch } from "../../utils/api";
 
 const DepartmentsContainer = styled.section`
   background: #fafbfc;
@@ -211,53 +210,7 @@ const departmentsData = [
   },
 ];
 
-const defaultColors = ["#3B82F6", "#EF4444", "#DC2626", "#7C3AED", "#10B981"];
-
 const DepartmentsSection = () => {
-  const [departments, setDepartments] = useState(departmentsData);
-
-  useEffect(() => {
-    let mounted = true;
-
-    const load = async () => {
-      try {
-        const res = await jsonFetch("/api/doctors");
-        const docs = Array.isArray(res?.doctors) ? res.doctors : [];
-
-        // derive unique departments from doctors
-        const map = {};
-        docs.forEach((d) => {
-          const name = (d.department || "General").toString().trim();
-          if (!name) return;
-          const key = name.toUpperCase();
-          if (!map[key]) {
-            map[key] = {
-              name: key,
-              description: `${name} services and specialists.`,
-              icon: FaStar,
-              color:
-                defaultColors[Object.keys(map).length % defaultColors.length],
-              features: ["Experienced Staff", "24/7 Support"],
-            };
-          }
-        });
-
-        const derived = Object.values(map);
-        if (mounted && derived.length) setDepartments(derived);
-      } catch (err) {
-        console.warn(
-          "[DEPARTMENTS] Failed to fetch dynamic departments, using defaults",
-          err
-        );
-      }
-    };
-
-    load();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
   return (
     <DepartmentsContainer>
       <SectionHeader>
@@ -269,7 +222,7 @@ const DepartmentsSection = () => {
       </SectionHeader>
 
       <DepartmentsGrid>
-        {departments.map((dept, index) => (
+        {departmentsData.map((dept, index) => (
           <DepartmentCard key={index}>
             <DepartmentIcon color={dept.color}>
               <dept.icon />
@@ -277,7 +230,7 @@ const DepartmentsSection = () => {
             <DepartmentName>{dept.name}</DepartmentName>
             <DepartmentDescription>{dept.description}</DepartmentDescription>
             <DepartmentFeatures>
-              {(dept.features || []).map((feature, idx) => (
+              {dept.features.map((feature, idx) => (
                 <FeatureItem key={idx}>{feature}</FeatureItem>
               ))}
             </DepartmentFeatures>
