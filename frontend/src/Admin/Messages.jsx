@@ -196,7 +196,9 @@ const Messages = ({ messages = [], onReply }) => {
                     <MessageLabel>Send reply:</MessageLabel>
                     <textarea
                       value={replyState[message._id] || ""}
-                      onChange={(e) => handleChange(message._id, e.target.value)}
+                      onChange={(e) =>
+                        handleChange(message._id, e.target.value)
+                      }
                       rows={3}
                       style={{ width: "100%", marginTop: 8, padding: 8 }}
                     />

@@ -80,11 +80,16 @@ const AdminDashboard = ({ onLogout }) => {
       });
       const updated = res?.message;
       if (updated) {
-        setMessages((prev) => prev.map((m) => (m._id === updated._id ? updated : m)));
+        setMessages((prev) =>
+          prev.map((m) => (m._id === updated._id ? updated : m))
+        );
       }
     } catch (err) {
       console.error("[ADMIN] Reply failed", err);
-      if (window.__APP_TOAST__ && typeof window.__APP_TOAST__.error === "function") {
+      if (
+        window.__APP_TOAST__ &&
+        typeof window.__APP_TOAST__.error === "function"
+      ) {
         window.__APP_TOAST__.error(err?.message || "Failed to send reply");
       } else {
         alert(err?.message || "Failed to send reply");
